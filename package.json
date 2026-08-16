@@ -1,0 +1,25 @@
+{
+  "name": "book-illustrator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "be",
+    "fe"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names be,fe \"npm run dev:be\" \"npm run dev:fe\"",
+    "dev:be": "npm run dev --workspace=be",
+    "dev:fe": "npm run dev --workspace=fe",
+    "start": "npm run dev",
+    "test": "npm run test:be && npm run test:fe",
+    "test:be": "npm run test --workspace=be",
+    "test:fe": "npm run test --workspace=fe"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

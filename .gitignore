@@ -1,0 +1,23 @@
+# ─── dependencies ───────────────────────────────────────────────────────────
+node_modules/
+
+# ─── secrets ────────────────────────────────────────────────────────────────
+.env
+.env.local
+
+# ─── data ────────────────────────────────────────────────────────────────────
+# Generated project files, uploaded books, portrait/illustration images
+be/data/
+
+# ─── build output ───────────────────────────────────────────────────────────
+fe/dist/
+.vite/
+
+# ─── test artefacts ─────────────────────────────────────────────────────────
+coverage/
+# NOTE: TEST-REPORT.txt is intentionally NOT listed here.
+# It is a graded deliverable for the assessment and must be committed.
+
+# ─── misc ────────────────────────────────────────────────────────────────────
+.DS_Store
+*.log
