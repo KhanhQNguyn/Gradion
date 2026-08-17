@@ -25,7 +25,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href={`#/${routes.list()}`}>
-          <span className="brand-mark">✦</span> Book Illustrator
+          Book Illustrator
         </a>
         <div className="topbar-user">
           <span className="topbar-email">{session.user.email}</span>
