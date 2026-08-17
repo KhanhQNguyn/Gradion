@@ -5,8 +5,8 @@ import { createFakeClient } from '../src/gemini/fake-client.js';
 import {
   makeApp,
   makeProject,
-  runStepAndSettle,
-  runWholePipeline,
+  runStepDirect,
+  runWholePipelineDirect,
   gatedClient,
   failingClient,
   simulateCrashedClaim,
@@ -72,7 +72,7 @@ describe('failure and retry', () => {
     const app = await makeApp({ client: failingClient(createFakeClient({}), () => true) });
     const project = await makeProject(app);
 
-    const after = await runStepAndSettle(app, project.id, 'style', {});
+    const after = await runStepDirect(app, project.id, 'style', {});
     assert.equal(after.steps.style.status, 'error');
     assert.ok(after.steps.style.error);
     assert.equal(after.stepState, null);
@@ -84,10 +84,10 @@ describe('failure and retry', () => {
   test('retrying a failed step with a working client succeeds', async () => {
     const app = await makeApp({ client: failingClient(createFakeClient({}), () => true) });
     const project = await makeProject(app);
-    await runStepAndSettle(app, project.id, 'style', {});
+    await runStepDirect(app, project.id, 'style', {});
 
     const app2 = await makeApp({ dataDir: app.dataDir, client: createFakeClient({}) });
-    const after = await runStepAndSettle(app2, project.id, 'style', {});
+    const after = await runStepDirect(app2, project.id, 'style', {});
     assert.equal(after.steps.style.status, 'done');
     assert.ok(after.style);
     await app.cleanup();
@@ -103,7 +103,7 @@ describe('failure and retry', () => {
     const app = await makeApp({ client: failing });
     const project = await makeProject(app);
 
-    const failed = await runStepAndSettle(app, project.id, 'style', {});
+    const failed = await runStepDirect(app, project.id, 'style', {});
     assert.equal(failed.steps.style.status, 'error');
     assert.ok(failed.gemini.bookFileUri);
     assert.ok(failed.gemini.bookInteractionId);
@@ -123,7 +123,7 @@ describe('failure and retry', () => {
     };
 
     const app2 = await makeApp({ dataDir: app.dataDir, client: counting });
-    const done = await runStepAndSettle(app2, project.id, 'style', {});
+    const done = await runStepDirect(app2, project.id, 'style', {});
 
     assert.equal(done.steps.style.status, 'done');
     assert.equal(calls.uploadFile, 0, 'retry must not re-upload the book');
@@ -143,9 +143,9 @@ describe('failure and retry', () => {
     const app = await makeApp({ client: failing });
     const project = await makeProject(app);
 
-    await runStepAndSettle(app, project.id, 'style', {});
-    await runStepAndSettle(app, project.id, 'characters', {});
-    const afterFail = await runStepAndSettle(app, project.id, 'portraits', {});
+    await runStepDirect(app, project.id, 'style', {});
+    await runStepDirect(app, project.id, 'characters', {});
+    const afterFail = await runStepDirect(app, project.id, 'portraits', {});
 
     assert.equal(afterFail.steps.portraits.status, 'error');
     assert.equal(afterFail.characters[0].imageStatus, 'done');
@@ -157,7 +157,7 @@ describe('failure and retry', () => {
     assert.ok(firstImageOnDisk);
 
     const app2 = await makeApp({ dataDir: app.dataDir, client: createFakeClient({}) });
-    const afterRetry = await runStepAndSettle(app2, project.id, 'portraits', {});
+    const afterRetry = await runStepDirect(app2, project.id, 'portraits', {});
 
     assert.equal(afterRetry.steps.portraits.status, 'done');
     assert.equal(afterRetry.characters[0].image, afterFail.characters[0].image);
@@ -190,7 +190,7 @@ describe('stuck-step recovery', () => {
     assert.equal(reset.stepState, null);
     assert.match(reset.steps.style.error, /restart/i);
 
-    const after = await runStepAndSettle(app, project.id, 'style', {});
+    const after = await runStepDirect(app, project.id, 'style', {});
     assert.equal(after.steps.style.status, 'done');
     await app.cleanup();
   });
@@ -200,9 +200,9 @@ describe('server-side caps', () => {
   test('characters are capped at limits.maxCharacters even though the client returns 4', async () => {
     const app = await makeApp({});
     const project = await makeProject(app);
-    await runStepAndSettle(app, project.id, 'style', {});
+    await runStepDirect(app, project.id, 'style', {});
 
-    const after = await runStepAndSettle(app, project.id, 'characters', {});
+    const after = await runStepDirect(app, project.id, 'characters', {});
     assert.equal(after.characters.length, app.limits.maxCharacters);
     assert.deepEqual(
       after.characters.map((c) => c.name),
@@ -214,11 +214,11 @@ describe('server-side caps', () => {
   test('chapters are capped at limits.maxChapters even though the client returns 3', async () => {
     const app = await makeApp({});
     const project = await makeProject(app);
-    await runStepAndSettle(app, project.id, 'style', {});
-    await runStepAndSettle(app, project.id, 'characters', {});
-    await runStepAndSettle(app, project.id, 'portraits', {});
+    await runStepDirect(app, project.id, 'style', {});
+    await runStepDirect(app, project.id, 'characters', {});
+    await runStepDirect(app, project.id, 'portraits', {});
 
-    const after = await runStepAndSettle(app, project.id, 'chapters', {});
+    const after = await runStepDirect(app, project.id, 'chapters', {});
     assert.equal(after.chapters.length, app.limits.maxChapters);
     assert.equal(after.chapters[0].name, 'The River Bank');
     await app.cleanup();
@@ -229,7 +229,7 @@ describe('end to end sanity', () => {
   test('the whole pipeline runs through the fake client', async () => {
     const app = await makeApp({});
     const project = await makeProject(app);
-    const done = await runWholePipeline(app, project.id, { style: '' });
+    const done = await runWholePipelineDirect(app, project.id, { style: '' });
 
     assert.equal(done.steps.style.status, 'done');
     assert.equal(done.steps.characters.status, 'done');
@@ -245,7 +245,7 @@ describe('end to end sanity', () => {
   test('a user-supplied style is used verbatim instead of calling GENERATE_STYLE', async () => {
     const app = await makeApp({});
     const project = await makeProject(app);
-    const after = await runStepAndSettle(app, project.id, 'style', { style: 'Bold pop art' });
+    const after = await runStepDirect(app, project.id, 'style', { style: 'Bold pop art' });
     assert.equal(after.style, 'Bold pop art');
     assert.equal(after.styleSource, 'user');
     await app.cleanup();

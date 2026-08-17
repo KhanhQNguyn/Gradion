@@ -1,4 +1,5 @@
 import { config, assertRunnableConfig } from './config.js';
+import { createApp } from './app.js';
 
 try {
   assertRunnableConfig();
@@ -7,5 +8,16 @@ try {
   process.exit(1);
 }
 
-console.log(`[be] config loaded — port ${config.port}, dataDir ${config.dataDir}`);
-console.log('[be] Express app not wired up yet — infrastructure-only checkpoint.');
+const { app } = await createApp({ config });
+
+const modeDescription = config.gemini.fake
+  ? 'stub'
+  : config.gemini.imageFake
+    ? `hybrid — live ${config.gemini.textModel}, stubbed images`
+    : `live (${config.gemini.textModel} / ${config.gemini.imageModel})`;
+
+app.listen(config.port, () => {
+  console.log(`[be] listening on port ${config.port}`);
+  console.log(`[be] gemini mode: ${modeDescription}`);
+  console.log(`[be] data dir: ${config.dataDir}`);
+});

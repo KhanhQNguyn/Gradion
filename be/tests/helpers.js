@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import request from 'supertest';
 
-import { createStore } from '../src/store/index.js';
-import { createHandlers } from '../src/domain/handlers.js';
-import { createPipeline } from '../src/domain/pipeline.js';
+import { createApp } from '../src/app.js';
+import { config as defaultConfig } from '../src/config.js';
+import { STEPS } from '../src/domain/steps.js';
 import { createFakeClient } from '../src/gemini/fake-client.js';
 import { ProviderError } from '../src/lib/errors.js';
-import { STEPS } from '../src/domain/steps.js';
 
 // A real ~600-character excerpt — "The Wind in the Willows", the Mole
 // spring-cleaning scene — long enough to clear config.limits.minBookChars.
@@ -32,37 +32,45 @@ const TEST_LIMITS = {
   maxTitleChars: 120,
 };
 
-const TEST_GEMINI = {
-  textModel: 'test-text-model',
-  imageModel: 'test-image-model',
-};
-
-// Builds the pipeline-level "app" (store + handlers + pipeline) on a
-// throwaway temp directory, unless an existing dataDir is passed in, in
-// which case it builds a *second* app over the *same* files — this is
-// how later tests simulate a server restart (fresh in-memory state,
-// same on-disk state). No Express here yet — that's createApp, built in
-// a later prompt on top of these same pieces.
-export async function makeApp({ client, dataDir, limits = TEST_LIMITS, now } = {}) {
+// Builds a whole app (store + pipeline + Express) on a throwaway temp
+// directory, unless an existing dataDir is passed in, in which case it
+// builds a *second* app over the *same* files — this is how tests
+// simulate a server restart: fresh in-memory state (new pipeline, empty
+// in-flight map), same on-disk state. gemini.fake is always forced true
+// (with test model names swapped in) regardless of the real .env; the
+// injected `client` (fake/gated/failing) is what the pipeline actually
+// calls, independent of that flag.
+export async function makeApp({ client, dataDir, limits = TEST_LIMITS } = {}) {
   const isTemp = !dataDir;
   const finalDataDir = dataDir || (await fs.mkdtemp(path.join(os.tmpdir(), 'be-app-test-')));
 
-  const store = createStore({ dataDir: finalDataDir });
-  await store.init();
+  const testConfig = {
+    ...defaultConfig,
+    dataDir: finalDataDir,
+    gemini: {
+      ...defaultConfig.gemini,
+      fake: true,
+      textModel: 'test-text-model',
+      imageModel: 'test-image-model',
+    },
+    limits,
+  };
 
   const testClient = client || createFakeClient({});
-  const handlers = createHandlers({ client: testClient, store, gemini: TEST_GEMINI, limits });
-  const pipelineOpts = { store, handlers, logger: { error() {} } };
-  if (now) pipelineOpts.now = now;
-  const pipeline = createPipeline(pipelineOpts);
+  const built = await createApp({
+    config: testConfig,
+    client: testClient,
+    logger: { error() {} }, // expected-failure tests would otherwise be noisy
+  });
 
   return {
-    store,
-    client: testClient,
-    handlers,
-    pipeline,
+    app: built.app,
+    store: built.store,
+    pipeline: built.pipeline,
+    client: built.client,
+    config: testConfig,
     limits,
-    gemini: TEST_GEMINI,
+    gemini: { textModel: testConfig.gemini.textModel, imageModel: testConfig.gemini.imageModel },
     dataDir: finalDataDir,
     async cleanup() {
       if (isTemp) await fs.rm(finalDataDir, { recursive: true, force: true });
@@ -70,30 +78,83 @@ export async function makeApp({ client, dataDir, limits = TEST_LIMITS, now } = {
   };
 }
 
-export async function makeProject(app, { email = 'reader@example.com', title = 'Wind Book' } = {}) {
-  const { user } = await app.store.findOrCreateUser({ email, name: 'Reader' });
-  return app.store.createProject({ userId: user.id, title, bookText: BOOK });
+export async function makeProject(ctx, { email = 'reader@example.com', title = 'Wind Book' } = {}) {
+  const { user } = await ctx.store.findOrCreateUser({ email, name: 'Reader' });
+  return ctx.store.createProject({ userId: user.id, title, bookText: BOOK });
 }
 
-// Starts a step and waits for its (never-rejecting) execution to settle,
-// then returns the freshly-read project.
-export async function runStepAndSettle(app, projectId, step, input) {
-  await app.pipeline.start(projectId, step, input);
-  await app.pipeline.settled(projectId);
-  return app.store.getProject(projectId);
+// ---------------------------------------------------------------------
+// Store/pipeline-level helpers — call the pipeline directly, no HTTP.
+// ---------------------------------------------------------------------
+
+export async function runStepDirect(ctx, projectId, step, input) {
+  await ctx.pipeline.start(projectId, step, input);
+  await ctx.pipeline.settled(projectId);
+  return ctx.store.getProject(projectId);
 }
 
-export async function runWholePipeline(app, projectId, { style } = {}) {
+export async function runWholePipelineDirect(ctx, projectId, { style } = {}) {
   for (const step of STEPS) {
-    await runStepAndSettle(app, projectId, step, step === 'style' ? { style } : undefined);
+    await runStepDirect(ctx, projectId, step, step === 'style' ? { style } : undefined);
   }
-  return app.store.getProject(projectId);
+  return ctx.store.getProject(projectId);
 }
+
+// ---------------------------------------------------------------------
+// HTTP-level helpers — drive the app exactly like the frontend would.
+// ---------------------------------------------------------------------
+
+export async function signIn(ctx, { email = 'reader@example.com', name = 'Reader' } = {}) {
+  return request(ctx.app).post('/api/auth/session').send({ email, name });
+}
+
+export async function createProject(ctx, token, { title = 'Wind Book', text = BOOK } = {}) {
+  return request(ctx.app)
+    .post('/api/projects')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ title, text });
+}
+
+export async function runStep(ctx, token, projectId, step, body = {}) {
+  return request(ctx.app)
+    .post(`/api/projects/${projectId}/steps/${step}/run`)
+    .set('Authorization', `Bearer ${token}`)
+    .send(body);
+}
+
+export async function getProject(ctx, token, projectId) {
+  return request(ctx.app)
+    .get(`/api/projects/${projectId}`)
+    .set('Authorization', `Bearer ${token}`);
+}
+
+// Runs a step over HTTP, waits for the (never-rejecting) pipeline
+// execution to settle, then returns the freshly-polled project response.
+export async function runStepAndSettle(ctx, token, projectId, step, body = {}) {
+  const started = await runStep(ctx, token, projectId, step, body);
+  if (started.status >= 400) return started;
+  await ctx.pipeline.settled(projectId);
+  return getProject(ctx, token, projectId);
+}
+
+export async function runWholePipeline(ctx, token, projectId, { style } = {}) {
+  let res;
+  for (const step of STEPS) {
+    const body = step === 'style' ? { style } : {};
+    res = await runStepAndSettle(ctx, token, projectId, step, body);
+    if (res.status >= 400) return res;
+  }
+  return res;
+}
+
+// ---------------------------------------------------------------------
+// Client test doubles.
+// ---------------------------------------------------------------------
 
 // Wraps a base client so a caller can pause any in-flight call until
 // release() is invoked — used to widen the window in which a duplicate
-// start() attempt would race the first one.
-export function gatedClient(base) {
+// start() attempt would race the first one. Records every call in .calls.
+export function gatedClient(base = createFakeClient({})) {
   let gate = null;
   let release = null;
   const calls = { uploadFile: 0, createInteraction: 0 };
@@ -123,11 +184,34 @@ export function gatedClient(base) {
   };
 }
 
-// Wraps a base client so specific calls can be made to fail. `shouldFail`
-// receives {kind, count, args} where kind is 'upload', 'imageGen', or
-// 'interaction' (any non-image createInteraction call), and count is a
-// 1-based counter scoped to that kind.
-export function failingClient(base, shouldFail) {
+// Two call shapes:
+//   failingClient('message')            -> always throws from
+//                                          createInteraction, uploadFile
+//                                          still works, for tests that
+//                                          just need "the step fails".
+//   failingClient(base, shouldFail)     -> wraps `base`, throwing only
+//                                          when shouldFail({kind, count,
+//                                          args}) is true. kind is
+//                                          'upload', 'imageGen', or
+//                                          'interaction' (any non-image
+//                                          createInteraction call); count
+//                                          is a 1-based counter scoped to
+//                                          that kind.
+export function failingClient(baseOrMessage, shouldFail) {
+  if (typeof baseOrMessage === 'string' || baseOrMessage === undefined) {
+    const message = baseOrMessage || 'Simulated failure';
+    const base = createFakeClient({});
+    return {
+      async uploadFile(args) {
+        return base.uploadFile(args);
+      },
+      async createInteraction() {
+        throw new ProviderError({ status: 500, body: message });
+      },
+    };
+  }
+
+  const base = baseOrMessage;
   let uploadCount = 0;
   let interactionCount = 0;
   let imageGenCount = 0;
@@ -163,9 +247,14 @@ export function failingClient(base, shouldFail) {
 // Directly manipulates store state to simulate a claim left behind by a
 // crashed process — bypasses the pipeline entirely, the way a real
 // restart would leave stale stepState on disk with no in-memory timer.
-export async function simulateCrashedClaim(app, projectId, step, { ageMs }) {
+// Accepts either a store directly or a ctx/app object that has one, and
+// either a bare ageMs number or { ageMs }.
+export async function simulateCrashedClaim(ctxOrStore, projectId, step, ageMsOrOptions) {
+  const store = ctxOrStore.store ?? ctxOrStore;
+  const ageMs = typeof ageMsOrOptions === 'number' ? ageMsOrOptions : ageMsOrOptions.ageMs;
   const startedAt = new Date(Date.now() - ageMs).toISOString();
-  return app.store.updateProject(projectId, (draft) => {
+
+  return store.updateProject(projectId, (draft) => {
     const attempts = (draft.steps[step]?.attempts || 0) + 1;
     draft.steps[step] = {
       status: 'running',
