@@ -8,6 +8,7 @@ node_modules/
 # ─── data ────────────────────────────────────────────────────────────────────
 # Generated project files, uploaded books, portrait/illustration images
 be/data/
+be/src/gemini/fixtures/*.png
 
 # ─── build output ───────────────────────────────────────────────────────────
 fe/dist/
