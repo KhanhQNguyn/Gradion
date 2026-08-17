@@ -22,20 +22,20 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="shell">
       <header className="topbar">
-        <a className="brand" href={`#/${routes.list()}`}>
+        <a className="topbar__brand" href={`#/${routes.list()}`}>
           Book Illustrator
         </a>
-        <div className="topbar-user">
-          <span className="topbar-email">{session.user.email}</span>
-          <button type="button" onClick={signOut}>
+        <div className="topbar__user">
+          <span className="topbar__email">{session.user.email}</span>
+          <button type="button" className="btn btn--ghost" onClick={signOut}>
             Sign out
           </button>
         </div>
       </header>
 
-      <main className="app-main">
+      <main className="shell__main">
         {route.name === 'new' && <NewProjectPage />}
         {route.name === 'project' && <ProjectDetailPage projectId={route.id} key={route.id} />}
         {route.name === 'list' && <ProjectListPage />}

@@ -1,0 +1,123 @@
+
+> book-illustrator@0.1.0 test
+> npm run test:be && npm run test:fe
+
+
+> book-illustrator@0.1.0 test:be
+> npm run test --workspace=be
+
+
+> be@0.1.0 test
+> node --test --test-reporter=spec
+
+▶ auth
+  ✔ a user is created on first sight of an email, and the same user is returned the second time (45.41584ms)
+  ✔ a bad email is rejected (7.540564ms)
+  ✔ a missing name is rejected (6.104313ms)
+  ✔ project routes refuse access without a valid token (19.602957ms)
+✔ auth (80.429709ms)
+▶ projects
+  ✔ a fresh user's project list starts empty (18.650966ms)
+  ✔ creating a project starts it in draft with five pending steps (22.242123ms)
+  ✔ title validation rejects an empty or oversized title (13.655036ms)
+  ✔ book text validation rejects text under the minimum length (7.671208ms)
+  ✔ the book text is served in full from its own endpoint and is NOT inlined into GET /projects/:id (16.231059ms)
+  ✔ listing only ever shows the signed-in user's own projects, newest first (29.797287ms)
+  ✔ an unknown project id 404s (7.068961ms)
+  ✔ a path-traversal attempt on the image route is rejected, not served (11.829223ms)
+  ✔ an unknown step name on the run route is rejected (10.09004ms)
+✔ projects (137.986834ms)
+▶ health
+  ✔ GET /api/health reports mode, models, and caps (4.972113ms)
+✔ health (5.214702ms)
+✔ one project, signed in, goes through all five steps end to end — including a simulated restart (168.398052ms)
+▶ no duplicate Gemini calls
+  ✔ first run of a step is accepted, a concurrent second request gets 409 (27.968354ms)
+  ✔ a client that refreshes mid-step is told the in-flight state, not an error (22.706458ms)
+  ✔ across a duplicate attempt the book is uploaded exactly once (17.692649ms)
+✔ no duplicate Gemini calls (69.700344ms)
+▶ failure and retry
+  ✔ a failing client records a failed step without losing the rest of the project (16.32471ms)
+  ✔ retrying a failed step with a working client succeeds (17.174481ms)
+  ✔ retry does not re-upload the book or redo a turn that already has an id (13.100892ms)
+  ✔ a failure on the second image leaves the first image file in place; retry only regenerates the missing one (36.608551ms)
+✔ failure and retry (83.705997ms)
+▶ stuck-step recovery
+  ✔ reset refuses to clear a claim that is still plausibly alive (7.213951ms)
+  ✔ reset flags a claim nobody is working on as stalled once past the threshold, and the retry works (16.369436ms)
+✔ stuck-step recovery (24.061642ms)
+▶ server-side caps
+  ✔ characters are capped at limits.maxCharacters even though the client returns 4 (13.134622ms)
+  ✔ chapters are capped at limits.maxChapters even though the client returns 3 (26.613046ms)
+✔ server-side caps (39.954189ms)
+▶ end to end sanity
+  ✔ the whole pipeline runs through the fake client (36.312922ms)
+  ✔ a user-supplied style is used verbatim instead of calling GENERATE_STYLE (8.083411ms)
+✔ end to end sanity (44.633824ms)
+▶ step ordering
+  ✔ first step runs on a fresh project (1.231576ms)
+  ✔ a step is refused when its predecessors are not done (0.263817ms)
+  ✔ the error names the nearest incomplete predecessor (1.421895ms)
+  ✔ each step becomes runnable once the one before it is done (0.279478ms)
+  ✔ a completed step cannot be re-run (0.179594ms)
+  ✔ a failed step CAN be retried (0.184494ms)
+  ✔ an unknown step name is rejected (0.428519ms)
+✔ step ordering (5.47414ms)
+▶ duplicate-run guard
+  ✔ a second run of the step already in flight is rejected (0.357434ms)
+  ✔ a different step is also rejected while one is in flight (0.254415ms)
+  ✔ a stranded claim can be taken over (0.224075ms)
+  ✔ a fresh claim is never called stranded (0.194386ms)
+  ✔ image steps use the longer (10 min) threshold, text steps the shorter one (0.207259ms)
+✔ duplicate-run guard (1.548039ms)
+▶ derived state
+  ✔ projectStatus reports draft correctly (0.402263ms)
+  ✔ projectStatus reports in_progress correctly (1.635078ms)
+  ✔ projectStatus reports done correctly (0.257368ms)
+  ✔ projectStatus reports error correctly (0.561888ms)
+  ✔ nextRunnableStep points at the next step to run (0.179603ms)
+  ✔ nextRunnableStep is null when finished (0.257924ms)
+✔ derived state (3.706401ms)
+▶ store: users and projects
+  ✔ findOrCreateUser creates then reuses, updating name on change (25.54056ms)
+  ✔ createProject writes book, project file, and links to user (15.323394ms)
+  ✔ requireProject 404s on missing id and on a project owned by someone else (15.267953ms)
+  ✔ getProject returns null for a path-traversal-shaped id, never throws (4.180395ms)
+  ✔ imagePath rejects non-png/traversal filenames and returns null when file is absent (8.768498ms)
+✔ store: users and projects (70.652359ms)
+▶ store: atomicity and concurrency
+  ✔ writeJsonAtomic never exposes a half-written file to a concurrent reader (47.210995ms)
+  ✔ two concurrent updateProject calls on the same project both land (48.822051ms)
+✔ store: atomicity and concurrency (96.323295ms)
+ℹ tests 53
+ℹ suites 13
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 520.942486
+
+> book-illustrator@0.1.0 test:fe
+> npm run test --workspace=fe
+
+
+> fe@0.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /Users/khanhnguyenquoc/Documents/Code/Gradion/Gradion/fe
+
+ ✓ tests/Stepper.test.jsx (9 tests) 245ms
+ ✓ tests/ProjectListPage.test.jsx (8 tests) 476ms
+ ✓ tests/ProjectDetailPage.test.jsx (8 tests) 540ms
+ ✓ tests/NewProjectPage.test.jsx (6 tests) 2598ms
+   ✓ NewProjectPage > validation fires for both fields, including aria-invalid 362ms
+   ✓ NewProjectPage > creating from pasted text works end to end and navigates on success 1124ms
+   ✓ NewProjectPage > a server-side failure on submit shows the error without clearing what the user typed 978ms
+
+ Test Files  4 passed (4)
+      Tests  31 passed (31)
+   Start at  12:28:33
+   Duration  3.71s (transform 253ms, setup 328ms, collect 941ms, tests 3.86s, environment 1.80s, prepare 321ms)
+

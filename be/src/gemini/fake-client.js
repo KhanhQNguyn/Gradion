@@ -1,4 +1,20 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { gradientPng } from '../lib/png.js';
+
+// Curated fixture stills, loaded once at module scope so a whole test
+// run (or a demo session) only reads them off disk a single time each.
+const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
+
+function loadFixtureBase64(filename) {
+  return fs.readFileSync(path.join(FIXTURES_DIR, filename)).toString('base64');
+}
+
+const FIXTURE_TOAD_BASE64 = loadFixtureBase64('toad-portrait.png');
+const FIXTURE_BADGER_BASE64 = loadFixtureBase64('badger-portrait.png');
+const FIXTURE_CHAPTER_BASE64 = loadFixtureBase64('chapter-illustration.png');
 
 // Same two-method interface as rest-client.js, no network. Two jobs: let
 // the whole test suite drive all five steps with zero quota, and let a
@@ -99,11 +115,26 @@ export function createFakeClient({ latencyMs = 0, palette } = {}) {
     };
   }
 
-  function imageInteraction() {
+  function imageInteraction(fixtureHint) {
     interactionCounter += 1;
-    const { from, to } = colors[imageCounter % colors.length];
-    imageCounter += 1;
-    const data = gradientPng({ width: 384, height: 576, from, to }).toString('base64');
+
+    let data;
+    // fixtureHint is set by handlers.js's generateImages() — it names
+    // the slot being generated (which character index, or "chapter"),
+    // not what the live text model happened to call it, so this works
+    // for any uploaded book, not just Wind in the Willows.
+    if (fixtureHint === 'toad') {
+      data = FIXTURE_TOAD_BASE64;
+    } else if (fixtureHint === 'badger') {
+      data = FIXTURE_BADGER_BASE64;
+    } else if (fixtureHint === 'chapter') {
+      data = FIXTURE_CHAPTER_BASE64;
+    } else {
+      const { from, to } = colors[imageCounter % colors.length];
+      imageCounter += 1;
+      data = gradientPng({ width: 384, height: 576, from, to }).toString('base64');
+    }
+
     return {
       id: `fake_int_${interactionCounter}`,
       status: 'completed',
@@ -112,17 +143,20 @@ export function createFakeClient({ latencyMs = 0, palette } = {}) {
     };
   }
 
-  async function createInteraction({ model, input, responseFormat }) {
+  async function createInteraction({ model, input, responseFormat, fixtureHint }) {
     await delay();
     const text = inputText(input);
 
     if (/image/i.test(model)) {
       // Seed turns ("you are going to generate portraits...") ask for no
       // image and must return a text-only interaction, exactly like the
-      // real model does for a seed turn. Only an actual generation
-      // request produces an image.
+      // real model does for a seed turn — seedPortraits/SEED_ILLUSTRATIONS
+      // never pass fixtureHint, so a missing hint plus an actual
+      // generation request (checked via the prompt prefix) is the
+      // uncapped-extra-slot / no-hint fallback case, still worth a real
+      // (gradient) image rather than "Understood.".
       if (text.startsWith('Create an illustration')) {
-        return imageInteraction();
+        return imageInteraction(fixtureHint);
       }
       return textInteraction('Understood.');
     }

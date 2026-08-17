@@ -71,9 +71,14 @@ describe('Stepper', () => {
     const stepList = steps('done', 'error');
     render(<Stepper steps={stepList} />);
 
-    const markers = screen.getAllByText(/^[0-9]$/, { selector: '.stepper-marker' });
+    const markers = document.querySelectorAll('.step__numeral');
     expect(markers).toHaveLength(5);
-    markers.forEach((marker, index) => expect(marker).toHaveTextContent(String(index + 1)));
+    const expected = ['I', 'II', 'III', 'IV', 'V'];
+    markers.forEach((marker, index) => {
+      expect(marker).toHaveTextContent(expected[index]);
+      // Roman numerals only — never a check, bang, or emoji glyph.
+      expect(marker.textContent).toMatch(/^[IV]+$/);
+    });
   });
 });
 
@@ -83,7 +88,7 @@ describe('ProgressStrip', () => {
     const { container } = render(<ProgressStrip steps={stepList} />);
 
     expect(screen.getByRole('img', { name: '2 of 5 steps done' })).toBeInTheDocument();
-    expect(container.querySelectorAll('.progress-seg')).toHaveLength(5);
+    expect(container.querySelectorAll('.progress-strip__seg')).toHaveLength(5);
   });
 
   test('a stalled step colours its segment as an error, not as running', () => {
@@ -91,8 +96,8 @@ describe('ProgressStrip', () => {
     stepList[0].stalled = true;
     const { container } = render(<ProgressStrip steps={stepList} />);
 
-    const first = container.querySelector('.progress-seg');
-    expect(first).toHaveClass('progress-seg--error');
-    expect(first).not.toHaveClass('progress-seg--running');
+    const first = container.querySelector('.progress-strip__seg');
+    expect(first).toHaveClass('progress-strip__seg--error');
+    expect(first).not.toHaveClass('progress-strip__seg--running');
   });
 });

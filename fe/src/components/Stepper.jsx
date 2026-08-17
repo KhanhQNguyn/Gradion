@@ -1,3 +1,5 @@
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+
 const STATE_DESCRIPTIONS = {
   done: 'done',
   running: 'in progress',
@@ -19,13 +21,13 @@ export function stepVisualState(step, index, currentIndex) {
 // next" in the rail — a display index, not a permission decision. The
 // server already decided what's runnable; this never gates anything.
 function findCurrentIndex(steps) {
-  const index = steps.findIndex((step) => step.status !== 'done');
-  return index;
+  return steps.findIndex((step) => step.status !== 'done');
 }
 
-// A table-of-contents rail. Done/current/pending/error render as a dot
-// fill keyed off data-state via ::before in styles.css — never a check
-// or bang character in the markup.
+// A table-of-contents rail — "I · Style   II · Characters   ..." in
+// Fraunces — not a checkmark progress bar. Done/current/pending/error
+// render as a dot fill keyed off data-state; never a check or bang
+// character in the markup.
 export function Stepper({ steps }) {
   const currentIndex = findCurrentIndex(steps);
 
@@ -38,14 +40,14 @@ export function Stepper({ steps }) {
         return (
           <li
             key={step.key}
-            className="stepper-item"
+            className="step"
             data-state={visualState}
             aria-current={isCurrent ? 'step' : undefined}
           >
-            <span className="stepper-marker" aria-hidden="true">
-              {index + 1}
+            <span className="step__marker" aria-hidden="true">
+              <span className="step__numeral">{ROMAN[index]}</span>
             </span>
-            <span className="stepper-label">{step.label}</span>
+            <span className="step__label">{step.label}</span>
             <span className="sr-only">
               Step {index + 1}: {step.label} — {STATE_DESCRIPTIONS[visualState]}
             </span>
@@ -62,11 +64,18 @@ export function ProgressStrip({ steps }) {
   const done = steps.filter((step) => step.status === 'done').length;
 
   return (
-    <div className="progress-strip" role="img" aria-label={`${done} of ${steps.length} steps done`}>
+    <div
+      className="progress-strip"
+      role="img"
+      aria-label={`${done} of ${steps.length} steps done`}
+    >
       {steps.map((step, index) => {
         const visualState = stepVisualState(step, index, currentIndex);
         return (
-          <span key={step.key} className={`progress-seg progress-seg--${visualState}`} />
+          <span
+            key={step.key}
+            className={`progress-strip__seg progress-strip__seg--${visualState}`}
+          />
         );
       })}
     </div>

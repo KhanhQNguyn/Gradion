@@ -6,7 +6,7 @@ import { useState } from 'react';
 function Placeholder({ state, error }) {
   if (state === 'running') {
     return (
-      <div className="art-placeholder" data-state="running">
+      <div className="art-card__placeholder art-card__placeholder--running" data-state="running">
         <span className="spinner" aria-hidden="true" />
         <span>Generating…</span>
       </div>
@@ -15,15 +15,15 @@ function Placeholder({ state, error }) {
 
   if (state === 'error') {
     return (
-      <div className="art-placeholder" data-state="error">
+      <div className="art-card__placeholder art-card__placeholder--error" data-state="error">
         <span>Failed</span>
-        {error && <span className="art-placeholder-detail">{error}</span>}
+        {error && <span className="art-card__placeholder-detail">{error}</span>}
       </div>
     );
   }
 
   return (
-    <div className="art-placeholder" data-state={state}>
+    <div className="art-card__placeholder" data-state={state}>
       <span>{state === 'queued' ? 'Queued' : 'Not generated yet'}</span>
     </div>
   );
@@ -31,24 +31,26 @@ function Placeholder({ state, error }) {
 
 // A fixed aspect-ratio frame so a portrait landing mid-generation never
 // shoves the layout around. Per DESIGN.md this frame IS the
-// specimen-plate visual, so it needs no icon inside it.
-export default function ArtCard({ item, kind, running }) {
+// specimen-plate visual — hairline frame, a plate number in the corner,
+// an italic caption below — nothing else decorating it.
+export default function ArtCard({ item, kind, running, number }) {
   const [open, setOpen] = useState(false);
 
   const placeholderState =
     running && item.imageStatus === 'pending' ? 'queued' : item.imageStatus;
 
   return (
-    <figure className="art-card">
-      <div className="art-frame">
+    <figure className={`art-card ${kind === 'chapter' ? 'art-card--wide' : ''}`}>
+      <div className="art-card__frame">
+        {number != null && <span className="art-card__plate-no">Fig. {number}</span>}
         {item.imageUrl ? (
           <img src={item.imageUrl} alt={item.name} />
         ) : (
           <Placeholder state={placeholderState} error={item.error} />
         )}
       </div>
-      <figcaption className="art-caption">
-        <p className="art-name">{item.name}</p>
+      <figcaption className="art-card__body">
+        <p className="art-card__name">{item.name}</p>
 
         {kind === 'chapter' && item.characters?.length > 0 && (
           <ul className="chip-row">
@@ -60,7 +62,7 @@ export default function ArtCard({ item, kind, running }) {
           </ul>
         )}
 
-        <div className={`art-prompt ${open ? 'art-prompt--open' : ''}`}>
+        <div className={`art-card__prompt ${open ? 'art-card__prompt--open' : ''}`}>
           <p>{item.prompt}</p>
         </div>
         <button type="button" className="link-button" onClick={() => setOpen((v) => !v)}>

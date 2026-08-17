@@ -57,7 +57,7 @@ describe('ProjectDetailPage', () => {
       stepState: runningState('portraits'),
       steps: steps('done', 'done', 'running'),
       characters: [
-        character(0, { name: 'Mr. Toad', image: 'character-1-mr-toad.png', imageStatus: 'done', imageUrl: '/api/projects/prj_test1/images/character-1-mr-toad.png' }),
+        character(0, { name: 'Mr. Toad', image: 'character-1-mr-toad.png', imageStatus: 'done', imageUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/E.H._Shepard_illustration_of_Mr_Toad.jpg/250px-E.H._Shepard_illustration_of_Mr_Toad.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail' }),
         character(1, { name: 'Badger', imageStatus: 'running' }),
       ],
     });

@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm ci)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm --workspace be run test)",
+      "Bash(npm --workspace fe run test)",
+      "Bash(node --test)",
+      "Bash(node --test:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run:*)",
+      "Bash(./test.sh)",
+      "Bash(./start.sh)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff:*)",
+      "Bash(git log)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(curl -s localhost:3001/api/health)",
+      "Bash(curl -s http://localhost:3001/api/health)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Bash(git push)",
+      "Bash(git push:*)",
+      "Bash(npm publish)",
+      "Bash(npm publish:*)"
+    ]
+  },
+  "env": {
+    "GEMINI_FAKE": "1"
+  }
+}

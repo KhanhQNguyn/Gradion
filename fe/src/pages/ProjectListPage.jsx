@@ -21,15 +21,15 @@ function ProjectRow({ project }) {
   }
 
   return (
-    <li className="project-row">
+    <li className="project-list__item">
       <button
         type="button"
-        className="project-row-button"
+        className="project-row"
         onClick={() => navigate(routes.project(project.id))}
       >
-        <div className="project-row-main">
-          <p className="project-row-title">{project.title}</p>
-          <p className="project-row-meta">
+        <div className="project-row__main">
+          <p className="project-row__title">{project.title}</p>
+          <p className="project-row__meta">
             {formatDate(project.createdAt)} · {statusLine}
           </p>
           {project.counts.characters > 0 && (
@@ -38,7 +38,7 @@ function ProjectRow({ project }) {
             </span>
           )}
         </div>
-        <div className="project-row-side">
+        <div className="project-row__aside">
           <StatusPill status={project.status} />
           <ProgressStrip steps={project.steps} />
         </div>
@@ -70,44 +70,53 @@ export default function ProjectListPage() {
     };
   }, []);
 
-  if (error) {
-    return (
-      <Banner tone="error" title="Could not load your projects">
-        {error.message}
-      </Banner>
-    );
-  }
-
-  if (projects === null) {
-    return (
-      <ul className="project-list" aria-busy="true">
-        {[0, 1, 2].map((row) => (
-          <li key={row} className="project-row project-row--skeleton" />
-        ))}
-      </ul>
-    );
-  }
-
-  if (projects.length === 0) {
-    return (
-      <EmptyState
-        title="No projects yet"
-        action={
-          <button type="button" onClick={() => navigate(routes.new())}>
-            Start your first project
-          </button>
-        }
-      >
-        Upload a book and Gemini will find its characters and illustrate a chapter.
-      </EmptyState>
-    );
-  }
-
   return (
-    <ul className="project-list">
-      {projects.map((project) => (
-        <ProjectRow key={project.id} project={project} />
-      ))}
-    </ul>
+    <div className="page">
+      <div className="page__head">
+        <div className="page__head-text">
+          <h1>Projects</h1>
+        </div>
+        <button type="button" className="btn btn--primary" onClick={() => navigate(routes.new())}>
+          New project
+        </button>
+      </div>
+
+      {error && (
+        <Banner tone="error" title="Could not load your projects">
+          {error.message}
+        </Banner>
+      )}
+
+      {!error && projects === null && (
+        <ul className="project-list" aria-busy="true">
+          {[0, 1, 2].map((row) => (
+            <li key={row} className="project-list__item project-list__item--skeleton">
+              <div className="skeleton skeleton--row" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!error && projects !== null && projects.length === 0 && (
+        <EmptyState
+          title="No projects yet"
+          action={
+            <button type="button" className="btn btn--primary" onClick={() => navigate(routes.new())}>
+              Start your first project
+            </button>
+          }
+        >
+          Upload a book and Gemini will find its characters and illustrate a chapter.
+        </EmptyState>
+      )}
+
+      {!error && projects !== null && projects.length > 0 && (
+        <ul className="project-list">
+          {projects.map((project) => (
+            <ProjectRow key={project.id} project={project} />
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

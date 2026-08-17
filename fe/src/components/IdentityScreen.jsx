@@ -37,15 +37,21 @@ export default function IdentityScreen({ onSignedIn }) {
     }
   }
 
-  const emailDescribedBy = ['identity-email-hint', touched.email && emailError ? 'identity-email-error' : null]
+  const emailDescribedBy = [
+    'identity-email-hint',
+    touched.email && emailError ? 'identity-email-error' : null,
+  ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <div className="identity-screen">
-      <form className="identity-card" onSubmit={handleSubmit} noValidate>
-        <h1>Book Illustrator</h1>
-        <p className="identity-lede">Sign in to start or continue a project.</p>
+    <div className="splash">
+      <form className="splash__card stack" onSubmit={handleSubmit} noValidate>
+        <div>
+          <p className="splash__brand">Book Illustrator</p>
+          <h1>Sign in</h1>
+          <p className="subtle">Start or continue a project.</p>
+        </div>
 
         {serverError && (
           <Banner tone="error" title="Could not sign in">
@@ -53,44 +59,54 @@ export default function IdentityScreen({ onSignedIn }) {
           </Banner>
         )}
 
-        <label htmlFor="identity-name">Name</label>
-        <input
-          id="identity-name"
-          type="text"
-          autoComplete="name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-          aria-invalid={touched.name && nameError ? 'true' : 'false'}
-          aria-describedby={touched.name && nameError ? 'identity-name-error' : undefined}
-        />
-        {touched.name && nameError && (
-          <p id="identity-name-error" className="field-error">
-            {nameError}
-          </p>
-        )}
+        <div className="field">
+          <label className="field__label" htmlFor="identity-name">
+            Name
+          </label>
+          <input
+            id="identity-name"
+            className="input"
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+            aria-invalid={touched.name && nameError ? 'true' : 'false'}
+            aria-describedby={touched.name && nameError ? 'identity-name-error' : undefined}
+          />
+          {touched.name && nameError && (
+            <p id="identity-name-error" className="field__error">
+              {nameError}
+            </p>
+          )}
+        </div>
 
-        <label htmlFor="identity-email">Email</label>
-        <input
-          id="identity-email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-          aria-invalid={touched.email && emailError ? 'true' : 'false'}
-          aria-describedby={emailDescribedBy}
-        />
-        <p id="identity-email-hint" className="field-hint">
-          No password. A new email starts a new workspace; a known one loads your projects.
-        </p>
-        {touched.email && emailError && (
-          <p id="identity-email-error" className="field-error">
-            {emailError}
+        <div className="field">
+          <label className="field__label" htmlFor="identity-email">
+            Email
+          </label>
+          <input
+            id="identity-email"
+            className="input"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            aria-invalid={touched.email && emailError ? 'true' : 'false'}
+            aria-describedby={emailDescribedBy}
+          />
+          <p id="identity-email-hint" className="field__hint">
+            No password. A new email starts a new workspace; a known one loads your projects.
           </p>
-        )}
+          {touched.email && emailError && (
+            <p id="identity-email-error" className="field__error">
+              {emailError}
+            </p>
+          )}
+        </div>
 
-        <button type="submit" disabled={busy}>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>

@@ -201,10 +201,26 @@ export function createHandlers({ client, store, gemini, limits }) {
       });
 
       try {
+        // Deterministic regardless of what the live text model actually
+        // named the character or chapter — it depends only on which
+        // slot is being generated, so it works for ANY uploaded book,
+        // not just the Wind in the Willows reference text. The fake
+        // client uses this to pick a fixture image; the real client
+        // ignores it (see rest-client.js/hybrid-client.js).
+        const fixtureHint =
+          filePrefix === 'character' && index === 0
+            ? 'toad'
+            : filePrefix === 'character' && index === 1
+              ? 'badger'
+              : filePrefix === 'chapter'
+                ? 'chapter'
+                : undefined;
+
         const interaction = await client.createInteraction({
           model: gemini.imageModel,
           input: promptFor(item),
           previousInteractionId,
+          fixtureHint,
         });
 
         const image = outputImage(interaction);

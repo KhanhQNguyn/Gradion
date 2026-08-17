@@ -71,74 +71,94 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="new-project-page">
+    <div className="page page--narrow">
       <a className="back-link" href={`#/${routes.list()}`}>
         ← All projects
       </a>
 
-      <h1>Start a new project</h1>
+      <div className="page__head">
+        <div className="page__head-text">
+          <h1>Start a new project</h1>
+        </div>
+      </div>
 
-      {serverError && (
-        <Banner tone="error" title="Could not create the project">
-          {serverError.message}
-        </Banner>
-      )}
-
-      <form onSubmit={handleSubmit} noValidate>
-        <label htmlFor="project-title">Title</label>
-        <input
-          id="project-title"
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onBlur={() => setTouched((t) => ({ ...t, title: true }))}
-          aria-invalid={touched.title && titleError ? 'true' : 'false'}
-          aria-describedby={touched.title && titleError ? 'project-title-error' : undefined}
-        />
-        {touched.title && titleError && (
-          <p id="project-title-error" className="field-error">
-            {titleError}
-          </p>
+      <div className="stack">
+        {serverError && (
+          <Banner tone="error" title="Could not create the project">
+            {serverError.message}
+          </Banner>
         )}
 
-        <label htmlFor="project-text">Book text</label>
-        <textarea
-          id="project-text"
-          rows={12}
-          value={text}
-          onChange={handleTextChange}
-          onBlur={() => setTouched((t) => ({ ...t, text: true }))}
-          aria-invalid={touched.text && textError ? 'true' : 'false'}
-          aria-describedby="project-text-hint"
-        />
-        <p id="project-text-hint" className="field-hint">
-          {filename ? `Loaded ${filename} — ` : ''}
-          {trimmedText.length} characters. Paste the full text — Project Gutenberg is a good
-          source — at least {MIN_TEXT} characters.
-        </p>
-        {touched.text && textError && <p className="field-error">{textError}</p>}
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="field">
+            <label className="field__label" htmlFor="project-title">
+              Title
+            </label>
+            <input
+              id="project-title"
+              className="input"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, title: true }))}
+              aria-invalid={touched.title && titleError ? 'true' : 'false'}
+              aria-describedby={touched.title && titleError ? 'project-title-error' : undefined}
+            />
+            {touched.title && titleError && (
+              <p id="project-title-error" className="field__error">
+                {titleError}
+              </p>
+            )}
+          </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt,text/plain"
-          hidden
-          aria-label="Upload a book text file"
-          onChange={handleFilePicked}
-        />
-        <button type="button" onClick={() => fileInputRef.current?.click()}>
-          Upload .txt
-        </button>
+          <div className="field">
+            <label className="field__label" htmlFor="project-text">
+              Book text
+            </label>
+            <textarea
+              id="project-text"
+              className="textarea"
+              rows={12}
+              value={text}
+              onChange={handleTextChange}
+              onBlur={() => setTouched((t) => ({ ...t, text: true }))}
+              aria-invalid={touched.text && textError ? 'true' : 'false'}
+              aria-describedby="project-text-hint"
+            />
+            <p id="project-text-hint" className="field__hint">
+              {filename ? `Loaded ${filename} — ` : ''}
+              {trimmedText.length} characters. Paste the full text — Project Gutenberg is a good
+              source — at least {MIN_TEXT} characters.
+            </p>
+            {touched.text && textError && <p className="field__error">{textError}</p>}
+          </div>
 
-        <div className="form-actions">
-          <button type="button" onClick={handleCancel}>
-            Cancel
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,text/plain"
+            hidden
+            aria-label="Upload a book text file"
+            onChange={handleFilePicked}
+          />
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Upload .txt
           </button>
-          <button type="submit" disabled={busy}>
-            {busy ? 'Creating…' : 'Create project'}
-          </button>
-        </div>
-      </form>
+
+          <div className="form-actions">
+            <button type="button" className="btn btn--ghost" onClick={handleCancel}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn--primary" disabled={busy}>
+              {busy ? 'Creating…' : 'Create project'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

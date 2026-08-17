@@ -76,10 +76,10 @@ function StalledBanner({ stepState, onClear }) {
 
   return (
     <Banner
-      tone="warning"
+      tone="warn"
       title={`"${stepState.label}" looks stuck`}
       action={
-        <button type="button" onClick={handleClear} disabled={clearing}>
+        <button type="button" className="btn btn--danger" onClick={handleClear} disabled={clearing}>
           {clearing ? 'Clearing…' : 'Clear and retry'}
         </button>
       }
@@ -98,7 +98,12 @@ function StepErrorBanner({ step, busy, onRetry }) {
       tone="error"
       title={`"${step.label}" failed`}
       action={
-        <button type="button" onClick={() => onRetry(step.key)} disabled={busy}>
+        <button
+          type="button"
+          className="btn btn--danger"
+          onClick={() => onRetry(step.key)}
+          disabled={busy}
+        >
           {busy ? 'Retrying…' : 'Retry this step'}
         </button>
       }
@@ -119,8 +124,10 @@ function StepActionCard({ project, pendingStep, onRunStep }) {
 
   if (!currentStep) {
     return (
-      <section className="card step-action-card">
-        <p>All five steps are done.</p>
+      <section className="card">
+        <div className="card__body">
+          <p>All five steps are done.</p>
+        </div>
       </section>
     );
   }
@@ -140,27 +147,34 @@ function StepActionCard({ project, pendingStep, onRunStep }) {
   }
 
   return (
-    <section className="card step-action-card">
-      <h2>
-        Step {stepIndex} · {stepInfo.label}
-      </h2>
-      <p className="step-hint">{actions.hint}</p>
+    <section className="card">
+      <div className="card__head">
+        <h2>
+          Step {stepIndex} · {stepInfo.label}
+        </h2>
+      </div>
+      <div className="card__body stack stack--tight">
+        <p className="subtle">{actions.hint}</p>
 
-      {currentStep === 'style' && (
-        <input
-          type="text"
-          value={styleText}
-          onChange={(event) => setStyleText(event.target.value)}
-          placeholder="e.g. linocut print, two inks, coarse paper"
-          disabled={busy}
-          aria-label="Your own art style (optional)"
-        />
-      )}
+        {currentStep === 'style' && (
+          <input
+            type="text"
+            className="input"
+            value={styleText}
+            onChange={(event) => setStyleText(event.target.value)}
+            placeholder="e.g. linocut print, two inks, coarse paper"
+            disabled={busy}
+            aria-label="Your own art style (optional)"
+          />
+        )}
 
-      <button type="button" onClick={handleClick} disabled={busy}>
-        {busy ? 'Working…' : ctaLabel}
-      </button>
-      {busy && <p className="step-action-note">A step is already running.</p>}
+        <div>
+          <button type="button" className="btn btn--primary btn--lg" onClick={handleClick} disabled={busy}>
+            {busy ? 'Working…' : ctaLabel}
+          </button>
+          {busy && <p className="step-action-note">A step is already running.</p>}
+        </div>
+      </div>
     </section>
   );
 }
@@ -192,32 +206,38 @@ function BookPanel({ projectId }) {
 
   if (state.status === 'loading') {
     return (
-      <section className="card book-panel" aria-busy="true">
-        <div className="skeleton skeleton--block" />
+      <section className="card" aria-busy="true">
+        <div className="card__body">
+          <div className="skeleton skeleton--block" />
+        </div>
       </section>
     );
   }
 
   if (state.status === 'error') {
     return (
-      <section className="card book-panel">
-        <Banner tone="error" title="Could not load the book text">
-          {state.error.message}
-        </Banner>
+      <section className="card">
+        <div className="card__body">
+          <Banner tone="error" title="Could not load the book text">
+            {state.error.message}
+          </Banner>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="card book-panel">
-      <div className="book-panel-header">
+    <section className="card">
+      <div className="card__head">
         <h2>Book text</h2>
-        <span className="caption">{state.text.length} characters</span>
+        <span className="faint">{state.text.length} characters</span>
       </div>
-      <pre className={`book-text ${expanded ? 'book-text--expanded' : ''}`}>{state.text}</pre>
-      <button type="button" onClick={() => setExpanded((v) => !v)}>
-        {expanded ? 'Collapse' : 'Expand'}
-      </button>
+      <div className="card__body">
+        <pre className={`book ${expanded ? 'book--full' : ''}`}>{state.text}</pre>
+        <button type="button" className="btn btn--ghost" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
     </section>
   );
 }
@@ -228,7 +248,7 @@ export default function ProjectDetailPage({ projectId }) {
 
   if (!project && loadError) {
     return (
-      <div className="project-detail-page">
+      <div className="page">
         <a className="back-link" href={`#/${routes.list()}`}>
           ← All projects
         </a>
@@ -241,9 +261,9 @@ export default function ProjectDetailPage({ projectId }) {
 
   if (!project) {
     return (
-      <div className="project-detail-page" aria-busy="true">
+      <div className="page" aria-busy="true">
         <div className="skeleton skeleton--title" />
-        <div className="skeleton skeleton--block" />
+        <div className="skeleton skeleton--block" style={{ marginBottom: 'var(--space-3)' }} />
         <div className="skeleton skeleton--block" />
       </div>
     );
@@ -254,93 +274,113 @@ export default function ProjectDetailPage({ projectId }) {
   const busy = Boolean(project.stepState) || Boolean(pendingStep);
 
   return (
-    <div className="project-detail-page">
+    <div className="page">
       <a className="back-link" href={`#/${routes.list()}`}>
         ← All projects
       </a>
 
-      <header className="project-header">
-        <div>
-          <h1>{project.title}</h1>
-          <p className="project-header-meta">
-            {formatDate(project.createdAt)}
-            {project.models.text ? ` · ${project.models.text} / ${project.models.image}` : ''}
-          </p>
-        </div>
-        <StatusPill status={project.status} />
-      </header>
+      <div className="stack">
+        <header className="project-header">
+          <div>
+            <h1>{project.title}</h1>
+            <p className="faint">
+              {formatDate(project.createdAt)}
+              {project.models.text ? ` · ${project.models.text} / ${project.models.image}` : ''}
+            </p>
+          </div>
+          <StatusPill status={project.status} />
+        </header>
 
-      <section className="card pipeline-card">
-        <h2>Pipeline</h2>
-        <Stepper steps={project.steps} />
-        <p className="caption">
-          {doneCount} of {project.steps.length} done
-        </p>
-      </section>
-
-      {project.stepState && !project.stepState.stalled && (
-        <RunningBanner stepState={project.stepState} />
-      )}
-
-      {project.stepState && project.stepState.stalled && (
-        <StalledBanner stepState={project.stepState} onClear={resetStuckStep} />
-      )}
-
-      {!project.stepState && erroredStep && (
-        <StepErrorBanner step={erroredStep} busy={busy} onRetry={runStep} />
-      )}
-
-      {actionError && (
-        <Banner tone="error" title="Something went wrong">
-          {actionError.message}
-        </Banner>
-      )}
-
-      <StepActionCard project={project} pendingStep={pendingStep} onRunStep={runStep} />
-
-      {project.style && (
-        <section className="card style-card">
-          <h2>Art style</h2>
-          <p>{project.style}</p>
-          <span className="chip">{project.styleSource === 'user' ? 'yours' : 'generated'}</span>
-        </section>
-      )}
-
-      {project.characters.length > 0 && (
-        <section className="card characters-section">
-          <h2>Characters</h2>
-          <p className="caption">Adults only, capped at 2 by the server.</p>
-          <div className="art-grid">
-            {project.characters.map((character) => (
-              <ArtCard
-                key={character.id}
-                item={character}
-                kind="character"
-                running={project.stepState?.step === 'portraits'}
-              />
-            ))}
+        <section className="card">
+          <div className="card__head">
+            <h2>Pipeline</h2>
+            <span className="faint">
+              {doneCount} of {project.steps.length} done
+            </span>
+          </div>
+          <div className="card__body">
+            <Stepper steps={project.steps} />
           </div>
         </section>
-      )}
 
-      {project.chapters.length > 0 && (
-        <section className="card chapters-section">
-          <h2>Chapter illustration</h2>
-          <p className="caption">Capped at 1 chapter by the server.</p>
-          <div className="art-grid">
-            {project.chapters.map((chapter) => (
-              <ArtCard
-                key={chapter.id}
-                item={chapter}
-                kind="chapter"
-                running={project.stepState?.step === 'illustrations'}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {project.stepState && !project.stepState.stalled && (
+          <RunningBanner stepState={project.stepState} />
+        )}
 
-      <BookPanel projectId={projectId} />
+        {project.stepState && project.stepState.stalled && (
+          <StalledBanner stepState={project.stepState} onClear={resetStuckStep} />
+        )}
+
+        {!project.stepState && erroredStep && (
+          <StepErrorBanner step={erroredStep} busy={busy} onRetry={runStep} />
+        )}
+
+        {actionError && (
+          <Banner tone="error" title="Something went wrong">
+            {actionError.message}
+          </Banner>
+        )}
+
+        <StepActionCard project={project} pendingStep={pendingStep} onRunStep={runStep} />
+
+        {project.style && (
+          <section className="card">
+            <div className="card__head">
+              <h2>Art style</h2>
+              <span className="chip">{project.styleSource === 'user' ? 'yours' : 'generated'}</span>
+            </div>
+            <div className="card__body">
+              <p>{project.style}</p>
+            </div>
+          </section>
+        )}
+
+        {project.characters.length > 0 && (
+          <section className="card">
+            <div className="card__head">
+              <h2>Characters</h2>
+            </div>
+            <div className="card__body">
+              <p className="faint">Adults only, capped at 2 by the server.</p>
+              <div className="art-grid">
+                {project.characters.map((character, index) => (
+                  <ArtCard
+                    key={character.id}
+                    item={character}
+                    kind="character"
+                    number={index + 1}
+                    running={project.stepState?.step === 'portraits'}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {project.chapters.length > 0 && (
+          <section className="card">
+            <div className="card__head">
+              <h2>Chapter illustration</h2>
+            </div>
+            <div className="card__body">
+              <p className="faint">Capped at 1 chapter by the server.</p>
+              <div className="art-grid">
+                {project.chapters.map((chapter, index) => (
+                  <ArtCard
+                    key={chapter.id}
+                    item={chapter}
+                    kind="chapter"
+                    number={index + 1}
+                    running={project.stepState?.step === 'illustrations'}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <BookPanel projectId={projectId} />
+      </div>
     </div>
   );
 }
