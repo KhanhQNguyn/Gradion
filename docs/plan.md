@@ -73,7 +73,7 @@ Using the IMAGE_MODEL_ID causes the model to return images naturally.
 | 1 | Character cap | max_character_images=5 (notebook sets 5; a comment says 3) | Max 2 characters, hard requirement | Brief wins. Enforce <=2 at config.limits, never env-configurable. |
 | 2 | Chapter cap | max_chapter_images=3 | Max 1 chapter, hard requirement | Brief wins. Enforce <=1 at config.limits. |
 | 3 | Auto-retry | SDK configured with 5 retries + exponential backoff on 429/5xx | Never auto-retry. Retries are user-triggered only. | Brief wins. HTTP client must NOT configure retry logic. Surface error; user retries manually. |
-| 4 | Image model name | Default gemini-3.1-flash-lite-image; also lists gemini-2.5-flash-image | "Nano Banana family", rate-limit link is for gemini-2.5-flash-image | Both are Nano Banana. Default to gemini-2.5-flash-image per brief's link; override via GEMINI_IMAGE_MODEL. |
+| 4 | Image model name | Default gemini-3.1-flash-lite-image; also lists gemini-2.5-flash-image | "Nano Banana family", rate-limit link is for gemini-2.5-flash-image | Both are Nano Banana. Default to gemini-3.1-flash-lite-image ("Nano Banana 2 Lite") — cheapest/fastest current image model, good fit for a 3-image cap; gemini-2.5-flash-image is the older generation and is being retired. Override via GEMINI_IMAGE_MODEL. |
 | 5 | Adult-only characters | "only the adults" - EEA restriction for Nano Banana | "adult characters, keep that restriction" | No disagreement. Both agree. |
 
 ---
