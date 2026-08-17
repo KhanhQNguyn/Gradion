@@ -62,6 +62,17 @@ async function call(path, { method = 'GET', body } = {}) {
 export const api = {
   signIn: (email, name) => call('/auth/session', { method: 'POST', body: { email, name } }),
 
+  // <img> tags are plain browser-native requests — they can't attach an
+  // Authorization header the way call() does. This is the one place
+  // that knows how to smuggle the token in another way (a query param
+  // the backend's sessionMiddleware also accepts), so no component ever
+  // has to touch the raw token itself.
+  authedImageUrl: (path) => {
+    if (!path) return path;
+    const separator = path.includes('?') ? '&' : '?';
+    return token ? `${path}${separator}token=${encodeURIComponent(token)}` : path;
+  },
+
   me: () => call('/me'),
 
   listProjects: () => call('/projects').then((data) => data.projects),

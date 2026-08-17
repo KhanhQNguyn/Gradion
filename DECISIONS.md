@@ -230,6 +230,44 @@ catching something a diff review wouldn't have: the code *looked* fine,
 read fine, and was one line shorter than the fix. It just didn't run
 everywhere the fix needs to run.
 
+## 9. The image route also accepts the token as a query param — AI OVERRIDE, caught by actually looking at the page
+
+Every route is authenticated the same way: `Authorization: Bearer
+<token>`, checked by `sessionMiddleware`. That's fine for every call
+`api.js` makes — its `call()` wrapper attaches the header to every
+`fetch()`. It's not fine for `ArtCard`'s `<img src={item.imageUrl}>`: a
+browser's native image request is not a `fetch()` call, and browsers
+never attach custom headers to it. Every portrait and every chapter
+illustration was silently 401ing from the moment images shipped, and
+none of the tests caught it, because the tests assert on the `imageUrl`
+string a component renders, not on whether a real browser can actually
+load it — the same category of gap as decision 8's `file.text()`, just
+on the read side of the app instead of the write side. It surfaced the
+same way: not a diff review, but loading the actual page and watching a
+broken-image icon where a portrait should be.
+
+The fix is `sessionMiddleware` also accepting the token from
+`req.query.token` when the `Authorization` header is absent, and
+`api.authedImageUrl()` being the one place that appends it — so no
+component ever touches a raw token. The header stays primary; every
+`fetch()`-driven call still goes through it untouched. The trade-off,
+stated plainly rather than hidden behind "it's just for images": the
+fallback lives on the whole middleware, not scoped to the image route
+alone, so structurally any route this middleware guards would accept a
+`?token=` query param too — `api.js` just never happens to send one
+except for image URLs. A leaked image URL exposes the same bearer token
+a leaked `Authorization` header would; someone who copies that token out
+of a URL and replays it by hand could hit any endpoint as that user, not
+just re-view images. That's not a bigger hole than the app already
+has — the token already *is* the account, per decision-adjacent honesty
+in `middleware/session.js`'s own comment — but it is one more place that
+token now travels, which query strings do more casually than headers
+(they end up in browser history, server access logs, and `Referer`
+headers on outbound requests). Accepted because the alternative — no way
+for a generated image to render in an `<img>` tag at all — isn't
+actually an alternative for an app whose whole point is showing
+generated images.
+
 ---
 
 **One more day, I'd spend it on:**

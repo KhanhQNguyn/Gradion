@@ -12,6 +12,10 @@ vi.mock('../src/api.js', () => ({
     runStep: vi.fn(),
     resetStuckStep: vi.fn(),
     getBook: vi.fn(),
+    // ArtCard calls this for every rendered image — a passthrough here
+    // mirrors the real implementation closely enough (it's a pure string
+    // transform) without pulling in the real module's token state.
+    authedImageUrl: (path) => path,
   },
 }));
 

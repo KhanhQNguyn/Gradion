@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { api } from '../api.js';
+
 // `running` is only true while a caller-chosen step (portraits or
 // illustrations) is the live one, so a queued-but-not-yet-generating item
 // can be told apart from one that's actually generating right now.
@@ -44,7 +46,7 @@ export default function ArtCard({ item, kind, running, number }) {
       <div className="art-card__frame">
         {number != null && <span className="art-card__plate-no">Fig. {number}</span>}
         {item.imageUrl ? (
-          <img src={item.imageUrl} alt={item.name} />
+          <img src={api.authedImageUrl(item.imageUrl)} alt={item.name} />
         ) : (
           <Placeholder state={placeholderState} error={item.error} />
         )}
